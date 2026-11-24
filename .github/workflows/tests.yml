@@ -1,0 +1,38 @@
+name: Model-switch and restart tests
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: model-switch-tests-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Run 21 deterministic state tests
+        run: python continuity_guard_demo.py
+      - name: Run 9 synthetic subprocess restart tests
+        run: python continuity_restart_fixture.py
+  pinned-rpr-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install pinned RPR public release
+        run: python -m pip install --no-cache-dir --disable-pip-version-check "responsibility-pathway-runtime==0.1.0a6"
+      - name: Run four cross-process mock-adapter tests
+        run: python rpr_provider_swap_probe.py
